@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,7 @@ import { GameHeader } from "@/components/GameHeader";
 import { GameCard } from "@/components/GameCard";
 import { PlayerList } from "@/components/PlayerList";
 import { useToast } from "@/hooks/use-toast";
+import { useTelegram } from "@/hooks/useTelegram";
 
 interface Player {
   id: string;
@@ -44,6 +45,14 @@ export const GameRoom = ({
   });
   const [factsSubmitted, setFactsSubmitted] = useState(false);
   const { toast } = useToast();
+  const { user } = useTelegram();
+
+  useEffect(() => {
+    // Check if current user has already submitted facts
+    if (user && players.some(p => p.id === user.id && p.hasEnteredFacts)) {
+      setFactsSubmitted(true);
+    }
+  }, [user, players]);
 
   const handleSubmitFacts = () => {
     if (!facts.fact1.trim() || !facts.fact2.trim() || !facts.fact3.trim()) {
@@ -64,6 +73,8 @@ export const GameRoom = ({
   };
 
   const playersWithFacts = players.filter((p) => p.hasEnteredFacts);
+  // Filter out current user from players list
+  const otherPlayersWithFacts = user ? playersWithFacts.filter(p => p.id !== user.id) : playersWithFacts;
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -77,7 +88,7 @@ export const GameRoom = ({
 
         <div className="mb-6">
           <PlayerList
-            players={playersWithFacts}
+            players={otherPlayersWithFacts}
             title="Игроки, которые ввели факты сегодня"
           />
         </div>
@@ -151,9 +162,9 @@ export const GameRoom = ({
               size="lg"
               onClick={onStartGuessing}
               className="w-full"
-              disabled={playersWithFacts.length === 0}
+              disabled={otherPlayersWithFacts.length === 0}
             >
-              {playersWithFacts.length === 0
+              {otherPlayersWithFacts.length === 0
                 ? "Ждем других игроков..."
                 : "Начать угадывать"}
             </Button>

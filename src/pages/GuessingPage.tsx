@@ -16,7 +16,7 @@ interface GuessingPageProps {
   roomId: string;
   players: Player[];
   onBack: () => void;
-  onGuess: (playerId: string, selectedFact: string) => boolean;
+  onGuess: (playerId: string, selectedFact: string) => Promise<boolean>;
   onFinish: () => void;
 }
 
@@ -36,10 +36,10 @@ export const GuessingPage = ({
     setSelectedPlayer(player);
   };
 
-  const handleFactSelect = (fact: string) => {
+  const handleFactSelect = async (fact: string) => {
     if (!selectedPlayer) return;
 
-    const isCorrect = onGuess(selectedPlayer.id, fact);
+    const isCorrect = await onGuess(selectedPlayer.id, fact);
     setGuessedPlayers(prev => new Set([...prev, selectedPlayer.id]));
 
     if (isCorrect) {

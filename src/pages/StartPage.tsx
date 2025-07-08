@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GameHeader } from "@/components/GameHeader";
 import { GameCard } from "@/components/GameCard";
 import { useToast } from "@/hooks/use-toast";
+import { useTelegram } from "@/hooks/useTelegram";
 
 interface StartPageProps {
   onCreateRoom: (playerData: PlayerData) => void;
@@ -25,6 +26,18 @@ export const StartPage = ({ onCreateRoom, onJoinRoom }: StartPageProps) => {
   });
   const [roomId, setRoomId] = useState("");
   const { toast } = useToast();
+  const { user, isReady } = useTelegram();
+
+  useEffect(() => {
+    // Auto-fill data from Telegram user
+    if (isReady && user) {
+      setPlayerData({
+        name: user.firstName || "",
+        surname: user.lastName || "",
+        position: "",
+      });
+    }
+  }, [isReady, user]);
 
   const handleCreateRoom = () => {
     if (!playerData.name.trim()) {

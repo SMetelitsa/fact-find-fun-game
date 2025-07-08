@@ -14,7 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      facts: {
+        Row: {
+          created_at: string
+          date: string
+          fact1: string
+          fact2: string
+          fact3: string
+          id: string
+          room_id: number
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          fact1: string
+          fact2: string
+          fact3: string
+          id: string
+          room_id: number
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          fact1?: string
+          fact2?: string
+          fact3?: string
+          id?: string
+          room_id?: number
+        }
+        Relationships: []
+      }
+      game_stats: {
+        Row: {
+          aim_id: string
+          chosen_fact: string
+          created_at: string
+          date: string
+          id: string
+          is_correct: boolean
+          player_id: string
+          room_id: number
+        }
+        Insert: {
+          aim_id: string
+          chosen_fact: string
+          created_at?: string
+          date?: string
+          id?: string
+          is_correct: boolean
+          player_id: string
+          room_id: number
+        }
+        Update: {
+          aim_id?: string
+          chosen_fact?: string
+          created_at?: string
+          date?: string
+          id?: string
+          is_correct?: boolean
+          player_id?: string
+          room_id?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: string | null
+          surname: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name?: string
+          position?: string | null
+          surname?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: string | null
+          surname?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
