@@ -193,13 +193,22 @@ const Index = () => {
   };
 
   const handleFactsSubmitted = async (facts: { fact1: string; fact2: string; fact3: string }) => {
-    if (!user?.id || !roomId) return;
+    if (!user?.id || !roomId) {
+      console.error('Missing user ID or room ID:', { userId: user?.id, roomId });
+      toast({
+        title: "Ошибка",
+        description: "Отсутствует ID пользователя или комнаты",
+        variant: "destructive"
+      });
+      return;
+    }
 
     try {
       const today = new Date().toISOString().split('T')[0];
+      console.log('Attempting to save facts:', { userId: user.id, roomId, facts, date: today });
       
       // Insert new facts (no upsert to preserve history)
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('facts')
         .insert({
           id: user.id,
@@ -208,9 +217,15 @@ const Index = () => {
           fact3: facts.fact3,
           room_id: parseInt(roomId),
           date: today
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', error);
+        throw error;
+      }
+
+      console.log('Facts saved successfully:', data);
 
       // Reload players after submitting facts
       await loadPlayers(roomId);
@@ -223,7 +238,7 @@ const Index = () => {
       console.error('Error saving facts:', error);
       toast({
         title: "Ошибка",
-        description: "Не удалось сохранить факты",
+        description: `Не удалось сохранить факты: ${error.message || 'Неизвестная ошибка'}`,
         variant: "destructive"
       });
     }
