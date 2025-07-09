@@ -80,6 +80,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          current_room_id: number | null
           id: string
           name: string
           position: string | null
@@ -88,6 +89,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          current_room_id?: number | null
           id: string
           name?: string
           position?: string | null
@@ -96,11 +98,33 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          current_room_id?: number | null
           id?: string
           name?: string
           position?: string | null
           surname?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      rooms: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: number
+          is_active: boolean
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id: number
+          is_active?: boolean
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: number
+          is_active?: boolean
         }
         Relationships: []
       }

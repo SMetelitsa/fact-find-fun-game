@@ -28,22 +28,46 @@ const Index = () => {
 
   useEffect(() => {
     if (isReady && user) {
-      // Save/update user profile in database
-      saveUserProfile(user);
+      // Save/update user profile and check for existing room
+      saveUserProfileAndCheckRoom(user);
     }
   }, [isReady, user]);
 
-  const saveUserProfile = async (telegramUser: any) => {
+  const saveUserProfileAndCheckRoom = async (telegramUser: any) => {
     try {
-      const { error } = await supabase
+      // Save/update user profile
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .upsert({
           id: telegramUser.id,
           name: telegramUser.firstName,
           surname: telegramUser.lastName || null,
-        });
+        }, { onConflict: 'id' })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Check if user has a current room and auto-join
+      if (profile?.current_room_id) {
+        const { data: room, error: roomError } = await supabase
+          .from('rooms')
+          .select('*')
+          .eq('id', profile.current_room_id)
+          .eq('is_active', true)
+          .single();
+
+        if (!roomError && room) {
+          setCurrentPlayer({
+            name: telegramUser.firstName,
+            surname: telegramUser.lastName || undefined,
+            position: profile.position || undefined,
+          });
+          setRoomId(room.id.toString());
+          await loadPlayers(room.id.toString());
+          setGameState("room");
+        }
+      }
     } catch (error) {
       console.error('Error saving user profile:', error);
     }
@@ -90,20 +114,82 @@ const Index = () => {
   const handleCreateRoom = async (playerData: PlayerData) => {
     if (!user?.id) return;
     
-    const newRoomId = Math.floor(Math.random() * 900000) + 100000; // 6-digit room ID
-    setCurrentPlayer(playerData);
-    setRoomId(newRoomId.toString());
-    await loadPlayers(newRoomId.toString());
-    setGameState("room");
+    try {
+      const newRoomId = Math.floor(Math.random() * 900000) + 100000; // 6-digit room ID
+      
+      // Create room in database
+      const { error: roomError } = await supabase
+        .from('rooms')
+        .insert({
+          id: newRoomId,
+          created_by: user.id,
+        });
+
+      if (roomError) throw roomError;
+
+      // Update user's current room
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ current_room_id: newRoomId })
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
+
+      setCurrentPlayer(playerData);
+      setRoomId(newRoomId.toString());
+      await loadPlayers(newRoomId.toString());
+      setGameState("room");
+    } catch (error) {
+      console.error('Error creating room:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось создать комнату",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleJoinRoom = async (playerData: PlayerData, roomId: string) => {
     if (!user?.id) return;
     
-    setCurrentPlayer(playerData);
-    setRoomId(roomId);
-    await loadPlayers(roomId);
-    setGameState("room");
+    try {
+      // Check if room exists and is active
+      const { data: room, error: roomError } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('id', parseInt(roomId))
+        .eq('is_active', true)
+        .single();
+
+      if (roomError || !room) {
+        toast({
+          title: "Ошибка",
+          description: "Комната не найдена или неактивна",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Update user's current room
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ current_room_id: parseInt(roomId) })
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
+
+      setCurrentPlayer(playerData);
+      setRoomId(roomId);
+      await loadPlayers(roomId);
+      setGameState("room");
+    } catch (error) {
+      console.error('Error joining room:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось войти в комнату",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleFactsSubmitted = async (facts: { fact1: string; fact2: string; fact3: string }) => {
@@ -112,9 +198,10 @@ const Index = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
+      // Insert new facts (no upsert to preserve history)
       const { error } = await supabase
         .from('facts')
-        .upsert({
+        .insert({
           id: user.id,
           fact1: facts.fact1,
           fact2: facts.fact2,
@@ -189,7 +276,15 @@ const Index = () => {
     }
   };
 
-  const handleBackToStart = () => {
+  const handleBackToStart = async () => {
+    if (user?.id) {
+      // Clear user's current room
+      await supabase
+        .from('profiles')
+        .update({ current_room_id: null })
+        .eq('id', user.id);
+    }
+    
     setGameState("start");
     setCurrentPlayer(null);
     setRoomId("");
