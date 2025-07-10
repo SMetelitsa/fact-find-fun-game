@@ -358,13 +358,18 @@ const Index = () => {
   }
 
   if (gameState === "guessing") {
+    // Filter out current player and add shuffled facts
+    const otherPlayers = players
+      .filter(p => p.id !== user?.id)
+      .map(p => ({
+        ...p,
+        facts: p.facts ? [...p.facts].sort(() => Math.random() - 0.5) : []
+      }));
+
     return (
       <GuessingPage
         roomId={roomId}
-        players={players.map(p => ({
-          ...p,
-          facts: p.facts || []
-        }))}
+        players={otherPlayers}
         onBack={() => setGameState("room")}
         onGuess={handleGuess}
         onFinish={handleFinishGame}
