@@ -77,29 +77,44 @@ const Index = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      const { data: factsData, error } = await supabase
+      // Get facts for today in this room
+      const { data: factsData, error: factsError } = await supabase
         .from('facts')
-        .select(`
-          id,
-          fact1,
-          fact2,
-          fact3,
-          profiles!facts_id_fkey(name, surname, position)
-        `)
+        .select('id, fact1, fact2, fact3')
         .eq('room_id', parseInt(roomId))
         .eq('date', today);
 
-      if (error) throw error;
+      if (factsError) throw factsError;
 
-      const playersWithFacts: Player[] = factsData?.map(fact => ({
-        id: fact.id,
-        name: (fact.profiles as any)?.name || 'Unknown',
-        surname: (fact.profiles as any)?.surname,
-        position: (fact.profiles as any)?.position,
-        hasEnteredFacts: true,
-        facts: [fact.fact1, fact.fact2, fact.fact3]
-      })) || [];
+      // Get profiles for all players who submitted facts
+      const playerIds = factsData?.map(fact => fact.id) || [];
+      
+      if (playerIds.length === 0) {
+        setPlayers([]);
+        return;
+      }
 
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, name, surname, position')
+        .in('id', playerIds);
+
+      if (profilesError) throw profilesError;
+
+      // Combine facts and profiles data
+      const playersWithFacts: Player[] = factsData?.map(fact => {
+        const profile = profilesData?.find(p => p.id === fact.id);
+        return {
+          id: fact.id,
+          name: profile?.name || 'Unknown',
+          surname: profile?.surname,
+          position: profile?.position,
+          hasEnteredFacts: true,
+          facts: [fact.fact1, fact.fact2, fact.fact3]
+        };
+      }) || [];
+
+      console.log('Loaded players with facts:', playersWithFacts);
       setPlayers(playersWithFacts);
     } catch (error) {
       console.error('Error loading players:', error);
