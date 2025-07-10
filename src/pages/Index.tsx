@@ -207,34 +207,76 @@ const Index = () => {
       const today = new Date().toISOString().split('T')[0];
       console.log('Attempting to save facts:', { userId: user.id, roomId, facts, date: today });
       
-      // Insert new facts (no upsert to preserve history)
-      const { data, error } = await supabase
+      // First check if facts already exist for this user, room and date
+      const { data: existingFacts, error: checkError } = await supabase
         .from('facts')
-        .insert({
-          id: user.id,
-          fact1: facts.fact1,
-          fact2: facts.fact2,
-          fact3: facts.fact3,
-          room_id: parseInt(roomId),
-          date: today
-        })
-        .select();
+        .select('id')
+        .eq('id', user.id)
+        .eq('room_id', parseInt(roomId))
+        .eq('date', today)
+        .maybeSingle();
 
-      if (error) {
-        console.error('Supabase error details:', error);
-        throw error;
+      if (checkError) {
+        console.error('Error checking existing facts:', checkError);
+        throw checkError;
       }
 
-      console.log('Facts saved successfully:', data);
+      if (existingFacts) {
+        // Update existing facts instead of inserting new ones
+        const { data, error } = await supabase
+          .from('facts')
+          .update({
+            fact1: facts.fact1,
+            fact2: facts.fact2,
+            fact3: facts.fact3,
+          })
+          .eq('id', user.id)
+          .eq('room_id', parseInt(roomId))
+          .eq('date', today)
+          .select();
+
+        if (error) {
+          console.error('Supabase update error:', error);
+          throw error;
+        }
+
+        console.log('Facts updated successfully:', data);
+        
+        toast({
+          title: "Успешно!",
+          description: "Ваши факты обновлены",
+        });
+      } else {
+        // Insert new facts
+        const { data, error } = await supabase
+          .from('facts')
+          .insert({
+            id: user.id,
+            fact1: facts.fact1,
+            fact2: facts.fact2,
+            fact3: facts.fact3,
+            room_id: parseInt(roomId),
+            date: today
+          })
+          .select();
+
+        if (error) {
+          console.error('Supabase insert error:', error);
+          throw error;
+        }
+
+        console.log('Facts saved successfully:', data);
+        
+        toast({
+          title: "Успешно!",
+          description: "Ваши факты сохранены",
+        });
+      }
 
       // Reload players after submitting facts
       await loadPlayers(roomId);
       
-      toast({
-        title: "Успешно!",
-        description: "Ваши факты сохранены",
-      });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving facts:', error);
       toast({
         title: "Ошибка",
