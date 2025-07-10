@@ -23,6 +23,7 @@ export type Database = {
           fact3: string
           id: string
           room_id: number
+          uuid_id: string
         }
         Insert: {
           created_at?: string
@@ -32,6 +33,7 @@ export type Database = {
           fact3: string
           id: string
           room_id: number
+          uuid_id?: string
         }
         Update: {
           created_at?: string
@@ -41,6 +43,7 @@ export type Database = {
           fact3?: string
           id?: string
           room_id?: number
+          uuid_id?: string
         }
         Relationships: []
       }

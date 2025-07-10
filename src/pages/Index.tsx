@@ -207,71 +207,30 @@ const Index = () => {
       const today = new Date().toISOString().split('T')[0];
       console.log('Attempting to save facts:', { userId: user.id, roomId, facts, date: today });
       
-      // First check if facts already exist for this user, room and date
-      const { data: existingFacts, error: checkError } = await supabase
+      // Insert new facts (each day gets a new entry)
+      const { data, error } = await supabase
         .from('facts')
-        .select('id')
-        .eq('id', user.id)
-        .eq('room_id', parseInt(roomId))
-        .eq('date', today)
-        .maybeSingle();
+        .insert({
+          id: user.id,
+          fact1: facts.fact1,
+          fact2: facts.fact2,
+          fact3: facts.fact3,
+          room_id: parseInt(roomId),
+          date: today
+        })
+        .select();
 
-      if (checkError) {
-        console.error('Error checking existing facts:', checkError);
-        throw checkError;
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw error;
       }
 
-      if (existingFacts) {
-        // Update existing facts instead of inserting new ones
-        const { data, error } = await supabase
-          .from('facts')
-          .update({
-            fact1: facts.fact1,
-            fact2: facts.fact2,
-            fact3: facts.fact3,
-          })
-          .eq('id', user.id)
-          .eq('room_id', parseInt(roomId))
-          .eq('date', today)
-          .select();
-
-        if (error) {
-          console.error('Supabase update error:', error);
-          throw error;
-        }
-
-        console.log('Facts updated successfully:', data);
-        
-        toast({
-          title: "Успешно!",
-          description: "Ваши факты обновлены",
-        });
-      } else {
-        // Insert new facts
-        const { data, error } = await supabase
-          .from('facts')
-          .insert({
-            id: user.id,
-            fact1: facts.fact1,
-            fact2: facts.fact2,
-            fact3: facts.fact3,
-            room_id: parseInt(roomId),
-            date: today
-          })
-          .select();
-
-        if (error) {
-          console.error('Supabase insert error:', error);
-          throw error;
-        }
-
-        console.log('Facts saved successfully:', data);
-        
-        toast({
-          title: "Успешно!",
-          description: "Ваши факты сохранены",
-        });
-      }
+      console.log('Facts saved successfully:', data);
+      
+      toast({
+        title: "Успешно!",
+        description: "Ваши факты сохранены",
+      });
 
       // Reload players after submitting facts
       await loadPlayers(roomId);
