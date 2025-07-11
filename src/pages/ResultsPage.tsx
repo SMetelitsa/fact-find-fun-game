@@ -92,7 +92,7 @@ export const ResultsPage = ({ roomId, onBack }: ResultsPageProps) => {
               player_id,
               chosen_fact,
               is_correct,
-              profiles!game_stats_player_id_fkey(name)
+              profiles(name)
             `)
             .eq('aim_id', user.id)
             .eq('room_id', parseInt(roomId))
