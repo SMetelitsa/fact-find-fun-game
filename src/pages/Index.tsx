@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { StartPage, PlayerData } from "./StartPage";
+import { RegistrationPage } from "./RegistrationPage";
+import { RoomSelectionPage } from "./RoomSelectionPage";
 import { GameRoom } from "./GameRoom";
 import { GuessingPage } from "./GuessingPage";
 import { ResultsPage } from "./ResultsPage";
@@ -7,7 +8,13 @@ import { useTelegram } from "@/hooks/useTelegram";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-type GameState = "start" | "room" | "guessing" | "results";
+type GameState = "registration" | "roomSelection" | "room" | "guessing" | "results";
+
+interface PlayerData {
+  name: string;
+  surname?: string;
+  position?: string;
+}
 
 interface Player {
   id: string;
@@ -19,57 +26,62 @@ interface Player {
 }
 
 const Index = () => {
-  const [gameState, setGameState] = useState<GameState>("start");
+  const [gameState, setGameState] = useState<GameState>("registration");
   const [currentPlayer, setCurrentPlayer] = useState<PlayerData | null>(null);
   const [roomId, setRoomId] = useState<string>("");
+  const [roomName, setRoomName] = useState<string>("");
   const [players, setPlayers] = useState<Player[]>([]);
   const { user, isReady } = useTelegram();
   const { toast } = useToast();
 
   useEffect(() => {
     if (isReady && user) {
-      // Save/update user profile and check for existing room
-      saveUserProfileAndCheckRoom(user);
+      checkUserRegistration(user);
     }
   }, [isReady, user]);
 
-  const saveUserProfileAndCheckRoom = async (telegramUser: any) => {
+  const checkUserRegistration = async (telegramUser: any) => {
     try {
-      // Save/update user profile
+      // Check if user profile exists and is registered
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .upsert({
-          id: telegramUser.id,
-          name: telegramUser.firstName,
-          surname: telegramUser.lastName || null,
-        }, { onConflict: 'id' })
-        .select()
+        .select('*')
+        .eq('id', telegramUser.id)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError && profileError.code !== 'PGRST116') {
+        throw profileError;
+      }
 
-      // Check if user has a current room and auto-join
-      if (profile?.current_room_id) {
-        const { data: room, error: roomError } = await supabase
-          .from('rooms')
-          .select('*')
-          .eq('id', profile.current_room_id)
-          .eq('is_active', true)
-          .single();
+      if (profile && profile.is_registered) {
+        // User is registered, check for room memberships
+        setCurrentPlayer({
+          name: profile.name,
+          surname: profile.surname || undefined,
+          position: profile.position || undefined,
+        });
 
-        if (!roomError && room) {
-          setCurrentPlayer({
-            name: telegramUser.firstName,
-            surname: telegramUser.lastName || undefined,
-            position: profile.position || undefined,
-          });
-          setRoomId(room.id.toString());
-          await loadPlayers(room.id.toString());
-          setGameState("room");
+        // Check if user has active room memberships
+        const { data: memberships, error: memberError } = await supabase
+          .from('room_members')
+          .select('room_id')
+          .eq('user_id', telegramUser.id)
+          .eq('is_active', true);
+
+        if (memberError) throw memberError;
+
+        if (memberships && memberships.length > 0) {
+          setGameState("roomSelection");
+        } else {
+          setGameState("roomSelection");
         }
+      } else {
+        // User is not registered, stay on registration page
+        setGameState("registration");
       }
     } catch (error) {
-      console.error('Error saving user profile:', error);
+      console.error('Error checking user registration:', error);
+      setGameState("registration");
     }
   };
 
@@ -126,7 +138,44 @@ const Index = () => {
     }
   };
 
-  const handleCreateRoom = async (playerData: PlayerData) => {
+  const handleRegistration = async (playerData: PlayerData) => {
+    if (!user?.id) return;
+    
+    try {
+      // Save/update user profile and mark as registered
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          name: playerData.name,
+          surname: playerData.surname || null,
+          position: playerData.position || null,
+          is_registered: true,
+        }, { onConflict: 'id' });
+
+      if (profileError) throw profileError;
+
+      setCurrentPlayer(playerData);
+      
+      // Check for room ID in URL (invite link)
+      const urlParams = new URLSearchParams(window.location.search);
+      const inviteRoomId = urlParams.get('room');
+      if (inviteRoomId) {
+        await handleJoinRoom(inviteRoomId);
+      } else {
+        setGameState("roomSelection");
+      }
+    } catch (error) {
+      console.error('Error registering user:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось зарегистрироваться",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCreateRoom = async (roomName: string) => {
     if (!user?.id) return;
     
     try {
@@ -138,22 +187,41 @@ const Index = () => {
         .insert({
           id: newRoomId,
           created_by: user.id,
+          name: roomName,
         });
 
       if (roomError) throw roomError;
 
-      // Update user's current room
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ current_room_id: newRoomId })
-        .eq('id', user.id);
+      // Add creator to room members
+      const { error: memberError } = await supabase
+        .from('room_members')
+        .insert({
+          room_id: newRoomId,
+          user_id: user.id,
+        });
 
-      if (profileError) throw profileError;
+      if (memberError) throw memberError;
 
-      setCurrentPlayer(playerData);
+      // Generate invite link
+      const inviteLink = `${window.location.origin}?room=${newRoomId}`;
+      
       setRoomId(newRoomId.toString());
+      setRoomName(roomName);
       await loadPlayers(newRoomId.toString());
       setGameState("room");
+
+      // Show invite link to user
+      navigator.clipboard.writeText(inviteLink).then(() => {
+        toast({
+          title: "Комната создана!",
+          description: `Ссылка для приглашения скопирована: ${inviteLink}`,
+        });
+      }).catch(() => {
+        toast({
+          title: "Комната создана!",
+          description: `Поделитесь ссылкой: ${inviteLink}`,
+        });
+      });
     } catch (error) {
       console.error('Error creating room:', error);
       toast({
@@ -164,7 +232,7 @@ const Index = () => {
     }
   };
 
-  const handleJoinRoom = async (playerData: PlayerData, roomId: string) => {
+  const handleJoinRoom = async (roomId: string) => {
     if (!user?.id) return;
     
     try {
@@ -185,16 +253,19 @@ const Index = () => {
         return;
       }
 
-      // Update user's current room
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ current_room_id: parseInt(roomId) })
-        .eq('id', user.id);
+      // Add user to room members (if not already added)
+      const { error: memberError } = await supabase
+        .from('room_members')
+        .upsert({
+          room_id: parseInt(roomId),
+          user_id: user.id,
+          is_active: true,
+        }, { onConflict: 'room_id,user_id' });
 
-      if (profileError) throw profileError;
+      if (memberError) throw memberError;
 
-      setCurrentPlayer(playerData);
       setRoomId(roomId);
+      setRoomName(room.name);
       await loadPlayers(roomId);
       setGameState("room");
     } catch (error) {
@@ -205,6 +276,10 @@ const Index = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleSelectRoom = async (roomId: string) => {
+    await handleJoinRoom(roomId);
   };
 
   const handleFactsSubmitted = async (facts: { fact1: string; fact2: string; fact3: string }) => {
@@ -307,18 +382,10 @@ const Index = () => {
     }
   };
 
-  const handleBackToStart = async () => {
-    if (user?.id) {
-      // Clear user's current room
-      await supabase
-        .from('profiles')
-        .update({ current_room_id: null })
-        .eq('id', user.id);
-    }
-    
-    setGameState("start");
-    setCurrentPlayer(null);
+  const handleChangeRoom = () => {
+    setGameState("roomSelection");
     setRoomId("");
+    setRoomName("");
     setPlayers([]);
   };
 
@@ -330,11 +397,21 @@ const Index = () => {
     setGameState("results");
   };
 
-  if (gameState === "start") {
+  if (gameState === "registration") {
     return (
-      <StartPage
+      <RegistrationPage
+        onRegistration={handleRegistration}
+      />
+    );
+  }
+
+  if (gameState === "roomSelection" && currentPlayer) {
+    return (
+      <RoomSelectionPage
         onCreateRoom={handleCreateRoom}
         onJoinRoom={handleJoinRoom}
+        onSelectRoom={handleSelectRoom}
+        currentUserId={user?.id || ""}
       />
     );
   }
@@ -343,6 +420,7 @@ const Index = () => {
     return (
       <GameRoom
         roomId={roomId}
+        roomName={roomName}
         players={players}
         currentPlayer={{
           id: "current",
@@ -350,7 +428,7 @@ const Index = () => {
           surname: currentPlayer.surname,
           position: currentPlayer.position,
         }}
-        onBack={handleBackToStart}
+        onBack={handleChangeRoom}
         onFactsSubmitted={handleFactsSubmitted}
         onStartGuessing={handleStartGuessing}
       />
@@ -381,7 +459,7 @@ const Index = () => {
     return (
       <ResultsPage
         roomId={roomId}
-        onBack={handleBackToStart}
+        onBack={handleChangeRoom}
       />
     );
   }

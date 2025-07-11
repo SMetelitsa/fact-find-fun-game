@@ -85,6 +85,7 @@ export type Database = {
           created_at: string
           current_room_id: number | null
           id: string
+          is_registered: boolean
           name: string
           position: string | null
           surname: string | null
@@ -94,6 +95,7 @@ export type Database = {
           created_at?: string
           current_room_id?: number | null
           id: string
+          is_registered?: boolean
           name?: string
           position?: string | null
           surname?: string | null
@@ -103,10 +105,35 @@ export type Database = {
           created_at?: string
           current_room_id?: number | null
           id?: string
+          is_registered?: boolean
           name?: string
           position?: string | null
           surname?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      room_members: {
+        Row: {
+          id: string
+          is_active: boolean
+          joined_at: string
+          room_id: number
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          room_id: number
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          room_id?: number
+          user_id?: string
         }
         Relationships: []
       }
@@ -116,18 +143,21 @@ export type Database = {
           created_by: string
           id: number
           is_active: boolean
+          name: string
         }
         Insert: {
           created_at?: string
           created_by: string
           id: number
           is_active?: boolean
+          name?: string
         }
         Update: {
           created_at?: string
           created_by?: string
           id?: number
           is_active?: boolean
+          name?: string
         }
         Relationships: []
       }

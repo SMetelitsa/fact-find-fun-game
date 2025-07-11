@@ -18,7 +18,7 @@ export const GameHeader = ({ title, subtitle, showBackButton, onBack }: GameHead
             onClick={onBack}
             className="text-primary-foreground hover:bg-white/20"
           >
-            ← Назад
+            ← Сменить комнату
           </Button>
         )}
         <div className="text-center flex-1">

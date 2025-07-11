@@ -18,6 +18,7 @@ interface Player {
 
 interface GameRoomProps {
   roomId: string;
+  roomName: string;
   players: Player[];
   currentPlayer: {
     id: string;
@@ -32,6 +33,7 @@ interface GameRoomProps {
 
 export const GameRoom = ({
   roomId,
+  roomName,
   players,
   currentPlayer,
   onBack,
@@ -80,8 +82,8 @@ export const GameRoom = ({
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-md mx-auto">
         <GameHeader
-          title={`Комната ${roomId}`}
-          subtitle="Игра «Угадай факт»"
+          title={roomName}
+          subtitle={`ID: ${roomId} • Игра «Угадай факт»`}
           showBackButton
           onBack={onBack}
         />
