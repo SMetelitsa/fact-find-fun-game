@@ -88,12 +88,7 @@ export const ResultsPage = ({ roomId, onBack }: ResultsPageProps) => {
           // Get all guesses for this fact
           const { data: guesses, error: guessesError } = await supabase
             .from('game_stats')
-            .select(`
-              player_id,
-              chosen_fact,
-              is_correct,
-              profiles(name)
-            `)
+            .select('player_id, chosen_fact, is_correct')
             .eq('aim_id', user.id)
             .eq('room_id', parseInt(roomId))
             .eq('date', new Date().toISOString().split('T')[0])
@@ -101,11 +96,23 @@ export const ResultsPage = ({ roomId, onBack }: ResultsPageProps) => {
 
           if (guessesError) throw guessesError;
 
-          const playerGuesses: PlayerGuess[] = guesses?.map(g => ({
-            player_name: (g.profiles as any)?.name || 'Unknown',
-            chosen_fact: g.chosen_fact,
-            is_correct: g.is_correct
-          })) || [];
+          // Get player names separately
+          const playerIds = guesses?.map(g => g.player_id) || [];
+          const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, name')
+            .in('id', playerIds);
+
+          if (profilesError) throw profilesError;
+
+          const playerGuesses: PlayerGuess[] = guesses?.map(g => {
+            const profile = profiles?.find(p => p.id === g.player_id);
+            return {
+              player_name: profile?.name || 'Unknown',
+              chosen_fact: g.chosen_fact,
+              is_correct: g.is_correct
+            };
+          }) || [];
 
           const totalGuessesForFact = playerGuesses.length;
           const correctGuessesForFact = playerGuesses.filter(g => g.is_correct).length;

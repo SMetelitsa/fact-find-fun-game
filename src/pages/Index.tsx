@@ -253,16 +253,28 @@ const Index = () => {
         return;
       }
 
-      // Add user to room members (if not already added)
-      const { error: memberError } = await supabase
+      // Check if user is already a member
+      const { data: existingMember, error: checkError } = await supabase
         .from('room_members')
-        .upsert({
-          room_id: parseInt(roomId),
-          user_id: user.id,
-          is_active: true,
-        }, { onConflict: 'room_id,user_id' });
+        .select('id')
+        .eq('room_id', parseInt(roomId))
+        .eq('user_id', user.id)
+        .single();
 
-      if (memberError) throw memberError;
+      if (checkError && checkError.code !== 'PGRST116') throw checkError;
+
+      if (!existingMember) {
+        // Add user to room members
+        const { error: memberError } = await supabase
+          .from('room_members')
+          .insert({
+            room_id: parseInt(roomId),
+            user_id: user.id,
+            is_active: true,
+          });
+
+        if (memberError) throw memberError;
+      }
 
       setRoomId(roomId);
       setRoomName(room.name);

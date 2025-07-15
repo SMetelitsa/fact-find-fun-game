@@ -100,7 +100,7 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
     try {
       const { error } = await supabase
         .from('room_members')
-        .update({ is_active: false })
+        .delete()
         .eq('room_id', roomId)
         .eq('user_id', currentUserId);
 
