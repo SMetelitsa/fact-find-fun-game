@@ -77,6 +77,7 @@ export const GuessingPage = ({
       toast({
         title: "Правильно!",
         description: "Вы угадали ложный факт!",
+        className: "bg-green-500 text-white border-green-600",
       });
     } else {
       toast({
