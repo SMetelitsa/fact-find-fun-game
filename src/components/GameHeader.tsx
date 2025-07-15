@@ -9,22 +9,23 @@ interface GameHeaderProps {
 
 export const GameHeader = ({ title, subtitle, showBackButton, onBack }: GameHeaderProps) => {
   return (
-    <div className="bg-gradient-primary text-primary-foreground py-6 px-4 rounded-lg shadow-medium mb-6">
-      <div className="flex items-center justify-between">
+    <div className="bg-gradient-hero text-primary-foreground py-8 px-6 rounded-2xl shadow-strong mb-8 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent"></div>
+      <div className="relative flex items-center justify-between">
         {showBackButton && (
           <Button
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="text-primary-foreground hover:bg-white/20"
+            className="text-primary-foreground hover:bg-white/15 backdrop-blur-sm rounded-lg"
           >
-            ← Сменить комнату
+            ← Назад
           </Button>
         )}
         <div className="text-center flex-1">
-          <h1 className="text-2xl font-bold">{title}</h1>
+          <h1 className="text-3xl font-bold mb-1">{title}</h1>
           {subtitle && (
-            <p className="text-primary-foreground/80 text-sm mt-1">{subtitle}</p>
+            <p className="text-primary-foreground/90 text-sm">{subtitle}</p>
           )}
         </div>
         {showBackButton && <div className="w-16" />}

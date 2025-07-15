@@ -124,78 +124,84 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
 
   return (
     <div className="min-h-screen bg-background">
-      <GameHeader title="Выбор комнаты" />
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        
-        {/* User's rooms */}
-        {userRooms.length > 0 && (
+      <div className="max-w-md mx-auto px-4">
+        <GameHeader title="Выбор комнаты" subtitle="Присоединитесь к игре или создайте новую комнату" />
+        <div className="space-y-6">
+          
+          {/* User's rooms */}
+          {userRooms.length > 0 && (
+            <GameCard>
+              <h2 className="text-xl font-semibold mb-6 text-foreground">Ваши комнаты</h2>
+              <div className="space-y-3">
+                {userRooms.map((room) => (
+                  <div key={room.room_id} className="flex items-center justify-between p-4 border border-border rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                    <div>
+                      <h3 className="font-semibold text-foreground">{room.room_name}</h3>
+                      <p className="text-sm text-muted-foreground">ID: {room.room_id}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => onSelectRoom(room.room_id.toString())}
+                        size="sm"
+                        variant="game"
+                      >
+                        Войти
+                      </Button>
+                      <Button 
+                        onClick={() => handleLeaveRoom(room.room_id)}
+                        variant="outline"
+                        size="sm"
+                        className="hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        Покинуть
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </GameCard>
+          )}
+
+          {/* Create new room */}
           <GameCard>
-            <h2 className="text-xl font-semibold mb-4">Ваши комнаты</h2>
-            <div className="space-y-3">
-              {userRooms.map((room) => (
-                <div key={room.room_id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <h3 className="font-medium">{room.room_name}</h3>
-                    <p className="text-sm text-muted-foreground">ID: {room.room_id}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={() => onSelectRoom(room.room_id.toString())}
-                      size="sm"
-                    >
-                      Войти
-                    </Button>
-                    <Button 
-                      onClick={() => handleLeaveRoom(room.room_id)}
-                      variant="destructive"
-                      size="sm"
-                    >
-                      Покинуть
-                    </Button>
-                  </div>
-                </div>
-              ))}
+            <h2 className="text-xl font-semibold mb-6 text-foreground">Создать комнату</h2>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="roomName" className="text-sm font-medium text-foreground">Название комнаты</Label>
+                <Input
+                  id="roomName"
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
+                  placeholder="Введите название комнаты"
+                  className="mt-2 border-border/60 focus:border-primary/60 rounded-lg"
+                />
+              </div>
+              <Button onClick={handleCreateRoom} variant="hero" size="lg" className="w-full">
+                Создать комнату
+              </Button>
             </div>
           </GameCard>
-        )}
 
-        {/* Create new room */}
-        <GameCard>
-          <h2 className="text-xl font-semibold mb-4">Создать комнату</h2>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="roomName">Название комнаты</Label>
-              <Input
-                id="roomName"
-                value={roomName}
-                onChange={(e) => setRoomName(e.target.value)}
-                placeholder="Введите название комнаты"
-              />
+          {/* Join existing room */}
+          <GameCard>
+            <h2 className="text-xl font-semibold mb-6 text-foreground">Войти в комнату</h2>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="joinRoomId" className="text-sm font-medium text-foreground">ID комнаты</Label>
+                <Input
+                  id="joinRoomId"
+                  value={joinRoomId}
+                  onChange={(e) => setJoinRoomId(e.target.value)}
+                  placeholder="Введите ID комнаты"
+                  className="mt-2 border-border/60 focus:border-primary/60 rounded-lg"
+                />
+              </div>
+              <Button onClick={handleJoinRoom} variant="game" size="lg" className="w-full">
+                Войти в комнату
+              </Button>
             </div>
-            <Button onClick={handleCreateRoom} className="w-full">
-              Создать комнату
-            </Button>
-          </div>
-        </GameCard>
-
-        {/* Join existing room */}
-        <GameCard>
-          <h2 className="text-xl font-semibold mb-4">Войти в комнату</h2>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="joinRoomId">ID комнаты</Label>
-              <Input
-                id="joinRoomId"
-                value={joinRoomId}
-                onChange={(e) => setJoinRoomId(e.target.value)}
-                placeholder="Введите ID комнаты"
-              />
-            </div>
-            <Button onClick={handleJoinRoom} className="w-full">
-              Войти в комнату
-            </Button>
-          </div>
-        </GameCard>
+          </GameCard>
+        </div>
       </div>
     </div>
   );

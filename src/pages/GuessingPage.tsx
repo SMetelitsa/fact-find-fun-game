@@ -98,8 +98,8 @@ export const GuessingPage = ({
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-md mx-auto">
         <GameHeader
-          title={`Угадывание - Комната ${roomId}`}
-          subtitle="Найдите ложные факты!"
+          title="Угадывание"
+          subtitle="Найдите ложные факты других игроков"
           showBackButton
           onBack={onBack}
         />
@@ -110,21 +110,21 @@ export const GuessingPage = ({
               <h2 className="text-xl font-semibold text-foreground mb-4">
                 Выберите игрока
               </h2>
-              <p className="text-muted-foreground mb-4 text-sm">
-                Нажмите на имя игрока, чтобы увидеть его факты
+              <p className="text-muted-foreground mb-6 text-sm">
+                Выберите игрока, чтобы угадать его ложный факт
               </p>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {availablePlayers.map((player) => (
                   <button
                     key={player.id}
                     onClick={() => handlePlayerSelect(player)}
-                    className="w-full p-4 text-left bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+                    className="w-full p-4 text-left bg-muted/40 rounded-xl hover:bg-gradient-primary hover:text-primary-foreground transition-all duration-200 transform hover:scale-[1.02] shadow-soft hover:shadow-medium"
                   >
-                    <div className="font-medium text-foreground">
+                    <div className="font-semibold">
                       {player.name} {player.surname}
                     </div>
                     {player.position && (
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm opacity-80 mt-1">
                         {player.position}
                       </div>
                     )}
@@ -135,7 +135,7 @@ export const GuessingPage = ({
                 {players.filter(p => alreadyGuessedToday.has(p.id)).map((player) => (
                   <div
                     key={player.id}
-                    className="w-full p-4 text-left bg-muted/50 rounded-lg opacity-50 cursor-not-allowed"
+                    className="w-full p-4 text-left bg-muted/20 rounded-xl opacity-50 cursor-not-allowed border border-border/30"
                   >
                     <div className="font-medium text-foreground">
                       {player.name} {player.surname}
@@ -145,16 +145,20 @@ export const GuessingPage = ({
                         {player.position}
                       </div>
                     )}
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Уже угадывали сегодня
+                    <div className="text-xs text-muted-foreground mt-1 font-medium">
+                      ✓ Уже угадывали сегодня
                     </div>
                   </div>
                 ))}
               </div>
               {availablePlayers.length === 0 && (
-                <p className="text-center text-muted-foreground py-4">
-                  Вы угадали факты всех доступных игроков!
-                </p>
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-4">🎉</div>
+                  <p className="text-foreground font-medium mb-2">Отлично!</p>
+                  <p className="text-muted-foreground text-sm">
+                    Вы угадали факты всех доступных игроков!
+                  </p>
+                </div>
               )}
             </GameCard>
 
@@ -163,37 +167,37 @@ export const GuessingPage = ({
                 variant="outline"
                 size="lg"
                 onClick={onFinish}
-                className="w-full"
+                className="w-full rounded-xl"
               >
-                Закончить на сегодня
+                Завершить угадывание
               </Button>
             </div>
           </>
         ) : (
           <GameCard>
-            <h2 className="text-xl font-semibold text-foreground mb-4">
-              Факты игрока {selectedPlayer.name} {selectedPlayer.surname}
+            <h2 className="text-xl font-semibold text-foreground mb-2">
+              Факты {selectedPlayer.name} {selectedPlayer.surname}
             </h2>
             <p className="text-muted-foreground mb-6 text-sm">
-              Какой из этих фактов ложный?
+              Какой из фактов ложный? Выберите один из вариантов:
             </p>
             <div className="space-y-3">
               {selectedPlayer.facts.map((fact, index) => (
                 <button
                   key={index}
                   onClick={() => handleFactSelect(fact)}
-                  className="w-full p-4 text-left bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+                  className="w-full p-5 text-left bg-muted/40 rounded-xl hover:bg-gradient-success hover:text-success-foreground transition-all duration-200 transform hover:scale-[1.02] shadow-soft hover:shadow-medium border border-border/30"
                 >
-                  <div className="text-foreground">{fact}</div>
+                  <div className="font-medium leading-relaxed">{fact}</div>
                 </button>
               ))}
             </div>
             <Button
               variant="ghost"
               onClick={() => setSelectedPlayer(null)}
-              className="w-full mt-4"
+              className="w-full mt-6 rounded-xl"
             >
-              Назад к списку игроков
+              ← Назад к списку игроков
             </Button>
           </GameCard>
         )}

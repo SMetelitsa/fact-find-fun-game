@@ -7,7 +7,7 @@ interface GameCardProps {
 
 export const GameCard = ({ children, className = "" }: GameCardProps) => {
   return (
-    <div className={`bg-gradient-card rounded-lg p-6 shadow-soft hover:shadow-medium transition-all duration-200 ${className}`}>
+    <div className={`bg-gradient-card rounded-xl p-6 shadow-card hover:shadow-medium transition-all duration-200 border border-border/50 ${className}`}>
       {children}
     </div>
   );
