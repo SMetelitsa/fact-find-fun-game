@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { RegistrationPage } from "./RegistrationPage";
 import { RoomSelectionPage } from "./RoomSelectionPage";
@@ -355,29 +356,53 @@ const Index = () => {
     if (!user?.id || !roomId) return false;
 
     try {
+      const today = new Date().toISOString().split('T')[0];
+
+      // Check if user has already guessed for this player today
+      const { data: existingGuess, error: checkError } = await supabase
+        .from('game_stats')
+        .select('id')
+        .eq('player_id', user.id)
+        .eq('aim_id', playerId)
+        .eq('room_id', parseInt(roomId))
+        .eq('date', today)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') throw checkError;
+
+      if (existingGuess) {
+        toast({
+          title: "Ошибка",
+          description: "Вы уже угадывали факт этого игрока сегодня",
+          variant: "destructive"
+        });
+        return false;
+      }
+
       // Get the target player's facts to check if the guess is correct
       const { data: targetFacts, error: factsError } = await supabase
         .from('facts')
         .select('fact3')
         .eq('id', playerId)
         .eq('room_id', parseInt(roomId))
-        .eq('date', new Date().toISOString().split('T')[0])
+        .eq('date', today)
         .single();
 
       if (factsError) throw factsError;
 
+      // The third fact (fact3) is the FALSE one, so if user selected it, they are correct
       const isCorrect = selectedFact === targetFacts.fact3;
 
       // Save the guess result
       const { error: guessError } = await supabase
         .from('game_stats')
-        .upsert({
+        .insert({
           player_id: user.id,
           aim_id: playerId,
           chosen_fact: selectedFact,
           is_correct: isCorrect,
           room_id: parseInt(roomId),
-          date: new Date().toISOString().split('T')[0]
+          date: today
         });
 
       if (guessError) throw guessError;

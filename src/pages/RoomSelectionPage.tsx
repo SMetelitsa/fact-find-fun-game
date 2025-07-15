@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { GameHeader } from "@/components/GameHeader";
 import { GameCard } from "@/components/GameCard";
@@ -149,7 +150,7 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
                       variant="destructive"
                       size="sm"
                     >
-                      Выйти
+                      Покинуть
                     </Button>
                   </div>
                 </div>

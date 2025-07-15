@@ -1,8 +1,11 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { GameHeader } from "@/components/GameHeader";
 import { GameCard } from "@/components/GameCard";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useTelegram } from "@/hooks/useTelegram";
 
 interface Player {
   id: string;
@@ -29,10 +32,38 @@ export const GuessingPage = ({
 }: GuessingPageProps) => {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [guessedPlayers, setGuessedPlayers] = useState<Set<string>>(new Set());
+  const [alreadyGuessedToday, setAlreadyGuessedToday] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+  const { user } = useTelegram();
+
+  useEffect(() => {
+    loadAlreadyGuessedPlayers();
+  }, [roomId, user?.id]);
+
+  const loadAlreadyGuessedPlayers = async () => {
+    if (!user?.id) return;
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data: existingGuesses, error } = await supabase
+        .from('game_stats')
+        .select('aim_id')
+        .eq('player_id', user.id)
+        .eq('room_id', parseInt(roomId))
+        .eq('date', today);
+
+      if (error) throw error;
+
+      const alreadyGuessed = new Set(existingGuesses?.map(g => g.aim_id) || []);
+      setAlreadyGuessedToday(alreadyGuessed);
+    } catch (error) {
+      console.error('Error loading already guessed players:', error);
+    }
+  };
 
   const handlePlayerSelect = (player: Player) => {
-    if (guessedPlayers.has(player.id)) return;
+    if (guessedPlayers.has(player.id) || alreadyGuessedToday.has(player.id)) return;
     setSelectedPlayer(player);
   };
 
@@ -58,7 +89,9 @@ export const GuessingPage = ({
     setSelectedPlayer(null);
   };
 
-  const availablePlayers = players.filter(p => !guessedPlayers.has(p.id));
+  const availablePlayers = players.filter(p => 
+    !guessedPlayers.has(p.id) && !alreadyGuessedToday.has(p.id)
+  );
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -96,10 +129,30 @@ export const GuessingPage = ({
                     )}
                   </button>
                 ))}
+                
+                {/* Show already guessed players */}
+                {players.filter(p => alreadyGuessedToday.has(p.id)).map((player) => (
+                  <div
+                    key={player.id}
+                    className="w-full p-4 text-left bg-muted/50 rounded-lg opacity-50 cursor-not-allowed"
+                  >
+                    <div className="font-medium text-foreground">
+                      {player.name} {player.surname}
+                    </div>
+                    {player.position && (
+                      <div className="text-sm text-muted-foreground">
+                        {player.position}
+                      </div>
+                    )}
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Уже угадывали сегодня
+                    </div>
+                  </div>
+                ))}
               </div>
               {availablePlayers.length === 0 && (
                 <p className="text-center text-muted-foreground py-4">
-                  Вы угадали факты всех игроков!
+                  Вы угадали факты всех доступных игроков!
                 </p>
               )}
             </GameCard>
