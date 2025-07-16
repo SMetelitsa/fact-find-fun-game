@@ -119,16 +119,21 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
   };
 
   const handleLeaveRoom = async (roomId: number) => {
+    console.log('Leaving room:', roomId, 'User:', currentUserId);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('room_members')
         .update({ is_active: false })
         .eq('room_id', roomId)
-        .eq('user_id', currentUserId);
+        .eq('user_id', currentUserId)
+        .select();
+
+      console.log('Leave room result:', { data, error });
 
       if (error) throw error;
       
       // Refresh the list to remove the inactive room
+      console.log('Refreshing room list...');
       await loadUserRooms();
     } catch (error) {
       console.error('Error leaving room:', error);
