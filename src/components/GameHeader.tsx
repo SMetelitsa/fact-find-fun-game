@@ -23,9 +23,9 @@ export const GameHeader = ({ title, subtitle, showBackButton, onBack }: GameHead
           </Button>
         )}
         <div className="text-center flex-1">
-          <h1 className="text-3xl font-bold mb-1 text-white drop-shadow-lg">{title}</h1>
+          <h1 className="text-3xl font-bold mb-1 text-purple-200 drop-shadow-lg">{title}</h1>
           {subtitle && (
-            <p className="text-white/90 text-sm drop-shadow-md">{subtitle}</p>
+            <p className="text-purple-100/90 text-sm drop-shadow-md">{subtitle}</p>
           )}
         </div>
         {showBackButton && <div className="w-16" />}
