@@ -101,13 +101,14 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
     try {
       const { error } = await supabase
         .from('room_members')
-        .delete()
+        .update({ is_active: false })
         .eq('room_id', roomId)
         .eq('user_id', currentUserId);
 
       if (error) throw error;
       
-      loadUserRooms();
+      // Refresh the list to remove the inactive room
+      await loadUserRooms();
     } catch (error) {
       console.error('Error leaving room:', error);
       alert('Ошибка при выходе из комнаты');
