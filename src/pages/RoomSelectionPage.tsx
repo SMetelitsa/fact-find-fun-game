@@ -94,20 +94,41 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
       alert("Пожалуйста, введите ID комнаты");
       return;
     }
-    onJoinRoom(joinRoomId.trim());
+    
+    // First try to reactivate existing membership
+    reactivateRoomMembership(joinRoomId.trim()).then(() => {
+      onJoinRoom(joinRoomId.trim());
+    });
+  };
+
+  const reactivateRoomMembership = async (roomId: string) => {
+    try {
+      const { error } = await supabase
+        .from('room_members')
+        .update({ is_active: true })
+        .eq('room_id', parseInt(roomId))
+        .eq('user_id', currentUserId);
+
+      if (error) {
+        // If update fails (no existing record), the main join logic will create a new one
+        console.log('No existing membership to reactivate');
+      }
+    } catch (error) {
+      console.error('Error reactivating membership:', error);
+    }
   };
 
   const handleLeaveRoom = async (roomId: number) => {
     try {
       const { error } = await supabase
         .from('room_members')
-        .delete()
+        .update({ is_active: false })
         .eq('room_id', roomId)
         .eq('user_id', currentUserId);
 
       if (error) throw error;
       
-      // Refresh the list to remove the room
+      // Refresh the list to remove the inactive room
       await loadUserRooms();
     } catch (error) {
       console.error('Error leaving room:', error);
