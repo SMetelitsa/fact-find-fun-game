@@ -120,6 +120,7 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
 
   const handleLeaveRoom = async (roomId: number) => {
     console.log('Leaving room:', roomId, 'User:', currentUserId);
+    console.log('Room ID type:', typeof roomId, 'User ID type:', typeof currentUserId);
     
     try {
       // First check if membership exists
@@ -139,6 +140,13 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
         return;
       }
 
+      // Log the exact record we're trying to update
+      console.log('Trying to update record with:', {
+        room_id: roomId,
+        user_id: currentUserId,
+        current_is_active: existing[0].is_active
+      });
+
       const { data, error } = await supabase
         .from('room_members')
         .update({ is_active: false })
@@ -149,6 +157,19 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
       console.log('Leave room result:', { data, error });
 
       if (error) throw error;
+      
+      if (data && data.length === 0) {
+        console.log('No rows were updated - trying direct update by ID');
+        const { data: directUpdate, error: directError } = await supabase
+          .from('room_members')
+          .update({ is_active: false })
+          .eq('id', existing[0].id)
+          .select();
+        
+        console.log('Direct update result:', { directUpdate, directError });
+        
+        if (directError) throw directError;
+      }
       
       // Refresh the list to remove the inactive room
       console.log('Refreshing room list...');
