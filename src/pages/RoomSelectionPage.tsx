@@ -120,7 +120,25 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
 
   const handleLeaveRoom = async (roomId: number) => {
     console.log('Leaving room:', roomId, 'User:', currentUserId);
+    
     try {
+      // First check if membership exists
+      const { data: existing, error: checkError } = await supabase
+        .from('room_members')
+        .select('*')
+        .eq('room_id', roomId)
+        .eq('user_id', currentUserId);
+      
+      console.log('Existing membership:', existing);
+      
+      if (checkError) throw checkError;
+      
+      if (!existing || existing.length === 0) {
+        console.log('No membership found to update');
+        alert('Участие в комнате не найдено');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('room_members')
         .update({ is_active: false })
