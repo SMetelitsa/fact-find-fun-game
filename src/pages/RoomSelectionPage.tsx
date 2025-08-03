@@ -129,60 +129,81 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
 
   const handleLeaveRoom = async (roomId: number) => {
     console.log('Leaving room:', roomId, 'User:', currentUserId);
-    console.log('Room ID type:', typeof roomId, 'User ID type:', typeof currentUserId);
     
     try {
-      // First check if membership exists
+      // Try to authenticate first to make sure RLS works
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      console.log('Auth user:', authUser?.id, 'Current user:', currentUserId);
+      
+      if (authError || !authUser) {
+        console.error('Auth error:', authError);
+        alert('Ошибка аутентификации');
+        return;
+      }
+
+      // Use the authenticated user's ID for the update
+      const userIdToUse = authUser.id;
+      console.log('Using user ID for update:', userIdToUse);
+
+      // First check if membership exists with auth user ID
       const { data: existing, error: checkError } = await supabase
         .from('room_members')
         .select('*')
         .eq('room_id', roomId)
-        .eq('user_id', currentUserId);
+        .eq('user_id', userIdToUse);
       
-      console.log('Existing membership:', existing);
+      console.log('Existing membership with auth ID:', existing);
       
-      if (checkError) throw checkError;
+      if (checkError) {
+        console.error('Check error:', checkError);
+        throw checkError;
+      }
       
       if (!existing || existing.length === 0) {
-        console.log('No membership found to update');
-        alert('Участие в комнате не найдено');
-        return;
-      }
-
-      // Log the exact record we're trying to update
-      console.log('Trying to update record with:', {
-        room_id: roomId,
-        user_id: currentUserId,
-        current_is_active: existing[0].is_active
-      });
-
-      const { data, error } = await supabase
-        .from('room_members')
-        .update({ is_active: false })
-        .eq('room_id', roomId)
-        .eq('user_id', currentUserId)
-        .select();
-
-      console.log('Leave room result:', { data, error });
-
-      if (error) throw error;
-      
-      if (data && data.length === 0) {
-        console.log('No rows were updated - trying direct update by ID');
-        const { data: directUpdate, error: directError } = await supabase
+        // Try with telegram user ID as fallback
+        const { data: existingTg, error: checkTgError } = await supabase
+          .from('room_members')
+          .select('*')
+          .eq('room_id', roomId)
+          .eq('user_id', currentUserId);
+        
+        console.log('Existing membership with telegram ID:', existingTg);
+        
+        if (checkTgError || !existingTg || existingTg.length === 0) {
+          console.log('No membership found to update');
+          alert('Участие в комнате не найдено');
+          return;
+        }
+        
+        // Update using telegram user ID
+        const { data, error } = await supabase
           .from('room_members')
           .update({ is_active: false })
-          .eq('id', existing[0].id)
+          .eq('room_id', roomId)
+          .eq('user_id', currentUserId)
           .select();
-        
-        console.log('Direct update result:', { directUpdate, directError });
-        
-        if (directError) throw directError;
+
+        console.log('Leave room result (telegram ID):', { data, error });
+
+        if (error) throw error;
+      } else {
+        // Update using auth user ID
+        const { data, error } = await supabase
+          .from('room_members')
+          .update({ is_active: false })
+          .eq('room_id', roomId)
+          .eq('user_id', userIdToUse)
+          .select();
+
+        console.log('Leave room result (auth ID):', { data, error });
+
+        if (error) throw error;
       }
       
       // Refresh the list to remove the inactive room
       console.log('Refreshing room list...');
       await loadUserRooms();
+      alert('Вы покинули комнату');
     } catch (error) {
       console.error('Error leaving room:', error);
       alert('Ошибка при выходе из комнаты');
