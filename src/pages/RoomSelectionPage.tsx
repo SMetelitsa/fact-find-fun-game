@@ -39,14 +39,6 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
     }
   }, [currentUserId]);
 
-  // Добавляем новый useEffect здесь
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('ID аутентифицированного пользователя (auth.uid):', user?.id, 'ID текущего пользователя из Telegram:', currentUserId);
-    };
-    checkAuth();
-  }, [currentUserId]);
   
   const loadUserRooms = async () => {
     try {
