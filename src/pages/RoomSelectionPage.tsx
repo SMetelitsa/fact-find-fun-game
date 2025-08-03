@@ -131,77 +131,17 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
     console.log('Leaving room:', roomId, 'User:', currentUserId);
     
     try {
-      // Try to authenticate first to make sure RLS works
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      console.log('Auth user:', authUser?.id, 'Current user:', currentUserId);
-      
-      if (authError || !authUser) {
-        console.error('Auth error:', authError);
-        alert('Ошибка аутентификации');
-        return;
-      }
+      // Use RPC function to bypass RLS and update with telegram user ID
+      const { data, error } = await supabase.rpc('leave_room', {
+        p_room_id: roomId,
+        p_user_id: currentUserId
+      });
 
-      // Use the authenticated user's ID for the update
-      const userIdToUse = authUser.id;
-      console.log('Using user ID for update:', userIdToUse);
+      console.log('Leave room RPC result:', { data, error });
 
-      // First check if membership exists with auth user ID
-      const { data: existing, error: checkError } = await supabase
-        .from('room_members')
-        .select('*')
-        .eq('room_id', roomId)
-        .eq('user_id', userIdToUse);
-      
-      console.log('Existing membership with auth ID:', existing);
-      
-      if (checkError) {
-        console.error('Check error:', checkError);
-        throw checkError;
-      }
-      
-      if (!existing || existing.length === 0) {
-        // Try with telegram user ID as fallback
-        const { data: existingTg, error: checkTgError } = await supabase
-          .from('room_members')
-          .select('*')
-          .eq('room_id', roomId)
-          .eq('user_id', currentUserId);
-        
-        console.log('Existing membership with telegram ID:', existingTg);
-        
-        if (checkTgError || !existingTg || existingTg.length === 0) {
-          console.log('No membership found to update');
-          alert('Участие в комнате не найдено');
-          return;
-        }
-        
-        // Update using telegram user ID
-        const { data, error } = await supabase
-          .from('room_members')
-          .update({ is_active: false })
-          .eq('room_id', roomId)
-          .eq('user_id', currentUserId)
-          .select();
-
-        console.log('Leave room result (telegram ID):', { data, error });
-
-        if (error) throw error;
-      } else {
-        // Update using auth user ID
-        const { data, error } = await supabase
-          .from('room_members')
-          .update({ is_active: false })
-          .eq('room_id', roomId)
-          .eq('user_id', userIdToUse)
-          .select();
-
-        console.log('Leave room result (auth ID):', { data, error });
-
-        if (error) throw error;
-      }
+      if (error) throw error;
       
       // Refresh the list to remove the inactive room
-      console.log('Refreshing room list...');
       await loadUserRooms();
       alert('Вы покинули комнату');
     } catch (error) {
