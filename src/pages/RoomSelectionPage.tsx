@@ -132,7 +132,7 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
     
     try {
       // Use RPC function to bypass RLS and update with telegram user ID
-      const { data, error } = await supabase.rpc('leave_room', {
+      const { data, error } = await (supabase as any).rpc('leave_room', {
         p_room_id: roomId,
         p_user_id: currentUserId
       });
