@@ -118,14 +118,12 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
       // If user has inactive membership, reactivate it
       if (existingMembership) {
         console.log('Found inactive membership, reactivating...');
-        const { data: updateData, error: updateError } = await supabase
-          .from('room_members')
-          .update({ is_active: true })
-          .eq('room_id', roomId)
-          .eq('user_id', currentUserId)
-          .select();
+        const { data: reactivated, error: updateError } = await (supabase as any).rpc('reactivate_room_membership', {
+          p_room_id: roomId,
+          p_user_id: currentUserId
+        });
 
-        console.log('Update result:', { updateData, updateError });
+        console.log('Reactivation result:', { reactivated, updateError });
 
         if (updateError) {
           console.error('Error reactivating membership:', updateError);
@@ -133,11 +131,13 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
           return;
         }
 
-        // Refresh the room list to show the reactivated room
-        console.log('Membership reactivated, refreshing room list...');
-        await loadUserRooms();
-        alert('Добро пожаловать обратно в комнату!');
-        return;
+        if (reactivated) {
+          // Refresh the room list to show the reactivated room
+          console.log('Membership reactivated, refreshing room list...');
+          await loadUserRooms();
+          alert('Добро пожаловать обратно в комнату!');
+          return;
+        }
       }
       
       console.log('No inactive membership found, proceeding with normal join...');

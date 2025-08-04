@@ -170,6 +170,10 @@ export type Database = {
         Args: { p_room_id: number; p_user_id: string }
         Returns: undefined
       }
+      reactivate_room_membership: {
+        Args: { p_room_id: number; p_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
