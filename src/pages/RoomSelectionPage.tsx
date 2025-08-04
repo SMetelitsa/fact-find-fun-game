@@ -90,33 +90,35 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
     onCreateRoom(roomName.trim());
   };
 
-  const handleJoinRoom = () => {
+  const handleJoinRoom = async () => {
     if (!joinRoomId.trim()) {
       alert("Пожалуйста, введите ID комнаты");
       return;
     }
     
-    // First try to reactivate existing membership
-    reactivateRoomMembership(joinRoomId.trim()).then(() => {
-      onJoinRoom(joinRoomId.trim());
-    });
-  };
-
-  const reactivateRoomMembership = async (roomId: string) => {
     try {
-      const { error } = await supabase
-        .from('room_members')
-        .update({ is_active: true })
-        .eq('room_id', parseInt(roomId))
-        .eq('user_id', currentUserId);
+      // First try to rejoin (reactivate existing membership)
+      const { data: rejoinResult, error: rejoinError } = await (supabase as any).rpc('rejoin_room', {
+        p_room_id: parseInt(joinRoomId.trim()),
+        p_user_id: currentUserId
+      });
 
-      if (error) {
-        // If update fails (no existing record), the main join logic will create a new one
-        console.log('No existing membership to reactivate');
+      if (rejoinError) {
+        console.error('Error rejoining room:', rejoinError);
+      }
+
+      // If rejoining was successful (user had previous membership), refresh the room list
+      if (rejoinResult) {
+        await loadUserRooms();
+        alert('Добро пожаловать обратно в комнату!');
+        return;
       }
     } catch (error) {
-      console.error('Error reactivating membership:', error);
+      console.error('Error checking existing membership:', error);
     }
+    
+    // If rejoining didn't work (user was never in this room), proceed with normal join
+    onJoinRoom(joinRoomId.trim());
   };
 
   const handleLeaveRoom = async (roomId: number) => {
