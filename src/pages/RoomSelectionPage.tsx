@@ -97,18 +97,34 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
     }
     
     try {
-      // First try to rejoin (reactivate existing membership)
-      const { data: rejoinResult, error: rejoinError } = await (supabase as any).rpc('rejoin_room', {
-        p_room_id: parseInt(joinRoomId.trim()),
-        p_user_id: currentUserId
-      });
+      // Check if user has inactive membership in this room
+      const { data: existingMembership, error: memberError } = await supabase
+        .from('room_members')
+        .select('*')
+        .eq('room_id', parseInt(joinRoomId.trim()))
+        .eq('user_id', currentUserId)
+        .eq('is_active', false)
+        .single();
 
-      if (rejoinError) {
-        console.error('Error rejoining room:', rejoinError);
+      if (memberError && memberError.code !== 'PGRST116') {
+        console.error('Error checking membership:', memberError);
       }
 
-      // If rejoining was successful (user had previous membership), refresh the room list
-      if (rejoinResult) {
+      // If user has inactive membership, reactivate it
+      if (existingMembership) {
+        const { error: updateError } = await supabase
+          .from('room_members')
+          .update({ is_active: true })
+          .eq('room_id', parseInt(joinRoomId.trim()))
+          .eq('user_id', currentUserId);
+
+        if (updateError) {
+          console.error('Error reactivating membership:', updateError);
+          alert('Ошибка при восстановлении членства в комнате');
+          return;
+        }
+
+        // Refresh the room list to show the reactivated room
         await loadUserRooms();
         alert('Добро пожаловать обратно в комнату!');
         return;
@@ -117,7 +133,7 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
       console.error('Error checking existing membership:', error);
     }
     
-    // If rejoining didn't work (user was never in this room), proceed with normal join
+    // If user was never in this room, proceed with normal join
     onJoinRoom(joinRoomId.trim());
   };
 
