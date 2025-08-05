@@ -234,7 +234,7 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
                   className="mt-2 border-border/60 focus:border-primary/60 rounded-lg"
                 />
               </div>
-              <Button onClick={handleCreateRoom} variant="hero" size="lg" className="w-full">
+              <Button onClick={handleCreateRoom} variant="game" size="lg" className="w-full">
                 Создать комнату
               </Button>
             </div>
