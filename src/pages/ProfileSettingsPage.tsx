@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ProfileSettingsPageProps {
   onBack: () => void;
+  currentUserId: string;
 }
 
 interface UserProfile {
@@ -18,7 +19,7 @@ interface UserProfile {
   position: string | null;
 }
 
-export const ProfileSettingsPage = ({ onBack }: ProfileSettingsPageProps) => {
+export const ProfileSettingsPage = ({ onBack, currentUserId }: ProfileSettingsPageProps) => {
   const [profile, setProfile] = useState<UserProfile>({
     name: "",
     surname: "",
@@ -26,29 +27,28 @@ export const ProfileSettingsPage = ({ onBack }: ProfileSettingsPageProps) => {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const { user: telegramUser } = useTelegram();
   const { toast } = useToast();
 
   useEffect(() => {
-    console.log('ProfileSettingsPage mounted, telegramUser:', telegramUser);
+    console.log('ProfileSettingsPage mounted, currentUserId:', currentUserId);
     loadProfile();
-  }, [telegramUser]);
+  }, [currentUserId]);
 
   const loadProfile = async () => {
-    console.log('loadProfile called, telegramUser?.id:', telegramUser?.id);
+    console.log('loadProfile called, currentUserId:', currentUserId);
     
-    if (!telegramUser?.id) {
-      console.log('No telegram user ID, setting loading to false');
+    if (!currentUserId) {
+      console.log('No currentUserId, setting loading to false');
       setLoading(false);
       return;
     }
 
     try {
-      console.log('Fetching profile from supabase for ID:', telegramUser.id.toString());
+      console.log('Fetching profile from supabase for ID:', currentUserId);
       const { data, error } = await supabase
         .from('profiles')
         .select('name, surname, position')
-        .eq('id', telegramUser.id.toString())
+        .eq('id', currentUserId)
         .single();
 
       console.log('Supabase response:', { data, error });
@@ -78,7 +78,7 @@ export const ProfileSettingsPage = ({ onBack }: ProfileSettingsPageProps) => {
   };
 
   const handleSaveProfile = async () => {
-    if (!telegramUser?.id) return;
+    if (!currentUserId) return;
 
     if (!profile.name.trim()) {
       toast({
@@ -100,7 +100,7 @@ export const ProfileSettingsPage = ({ onBack }: ProfileSettingsPageProps) => {
           position: profile.position?.trim() || null,
           updated_at: new Date().toISOString()
         })
-        .eq('id', telegramUser.id.toString());
+        .eq('id', currentUserId);
 
       if (error) throw error;
 

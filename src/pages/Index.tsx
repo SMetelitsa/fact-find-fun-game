@@ -453,7 +453,7 @@ const Index = () => {
         onSelectRoom={handleSelectRoom}
         currentUserId={user?.id || ""}
         onOpenProfileSettings={() => {
-          console.log('Opening profile settings, changing gameState to profileSettings');
+          alert(`Переходим в настройки профиля. User ID: ${user?.id}`);
           setGameState("profileSettings");
         }}
       />
@@ -464,6 +464,7 @@ const Index = () => {
     return (
       <ProfileSettingsPage
         onBack={() => setGameState("roomSelection")}
+        currentUserId={user?.id || ""}
       />
     );
   }
