@@ -189,7 +189,10 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
         {/* Profile Settings Button */}
         <div className="mb-6">
           <Button 
-            onClick={onOpenProfileSettings}
+            onClick={() => {
+              console.log('Profile settings button clicked');
+              onOpenProfileSettings();
+            }}
             variant="outline" 
             size="sm"
             className="w-full"

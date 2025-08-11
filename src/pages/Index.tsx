@@ -36,6 +36,8 @@ const Index = () => {
   const { user, isReady } = useTelegram();
   const { toast } = useToast();
 
+  console.log('Current game state:', gameState, 'Current player:', currentPlayer);
+
   useEffect(() => {
     if (isReady && user) {
       checkUserRegistration(user);
@@ -450,7 +452,10 @@ const Index = () => {
         onJoinRoom={handleJoinRoom}
         onSelectRoom={handleSelectRoom}
         currentUserId={user?.id || ""}
-        onOpenProfileSettings={() => setGameState("profileSettings")}
+        onOpenProfileSettings={() => {
+          console.log('Opening profile settings, changing gameState to profileSettings');
+          setGameState("profileSettings");
+        }}
       />
     );
   }
