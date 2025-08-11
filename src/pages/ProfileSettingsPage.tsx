@@ -30,27 +30,39 @@ export const ProfileSettingsPage = ({ onBack }: ProfileSettingsPageProps) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('ProfileSettingsPage mounted, telegramUser:', telegramUser);
     loadProfile();
-  }, []);
+  }, [telegramUser]);
 
   const loadProfile = async () => {
-    if (!telegramUser?.id) return;
+    console.log('loadProfile called, telegramUser?.id:', telegramUser?.id);
+    
+    if (!telegramUser?.id) {
+      console.log('No telegram user ID, setting loading to false');
+      setLoading(false);
+      return;
+    }
 
     try {
+      console.log('Fetching profile from supabase for ID:', telegramUser.id.toString());
       const { data, error } = await supabase
         .from('profiles')
         .select('name, surname, position')
         .eq('id', telegramUser.id.toString())
         .single();
 
+      console.log('Supabase response:', { data, error });
+
       if (error) throw error;
 
       if (data) {
-        setProfile({
+        const profileData = {
           name: data.name || "",
           surname: data.surname || "",
           position: data.position || ""
-        });
+        };
+        console.log('Setting profile data:', profileData);
+        setProfile(profileData);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -60,6 +72,7 @@ export const ProfileSettingsPage = ({ onBack }: ProfileSettingsPageProps) => {
         variant: "destructive"
       });
     } finally {
+      console.log('Setting loading to false');
       setLoading(false);
     }
   };
