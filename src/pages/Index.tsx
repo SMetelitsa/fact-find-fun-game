@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { RegistrationPage } from "./RegistrationPage";
 import { RoomSelectionPage } from "./RoomSelectionPage";
+import { ProfileSettingsPage } from "./ProfileSettingsPage";
 import { GameRoom } from "./GameRoom";
 import { GuessingPage } from "./GuessingPage";
 import { ResultsPage } from "./ResultsPage";
@@ -9,7 +10,7 @@ import { useTelegram } from "@/hooks/useTelegram";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-type GameState = "registration" | "roomSelection" | "room" | "guessing" | "results";
+type GameState = "registration" | "roomSelection" | "profileSettings" | "room" | "guessing" | "results";
 
 interface PlayerData {
   name: string;
@@ -449,6 +450,15 @@ const Index = () => {
         onJoinRoom={handleJoinRoom}
         onSelectRoom={handleSelectRoom}
         currentUserId={user?.id || ""}
+        onOpenProfileSettings={() => setGameState("profileSettings")}
+      />
+    );
+  }
+
+  if (gameState === "profileSettings") {
+    return (
+      <ProfileSettingsPage
+        onBack={() => setGameState("roomSelection")}
       />
     );
   }

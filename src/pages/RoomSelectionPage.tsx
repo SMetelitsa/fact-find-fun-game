@@ -13,6 +13,7 @@ interface RoomSelectionPageProps {
   onJoinRoom: (roomId: string) => void;
   onSelectRoom: (roomId: string) => void;
   currentUserId: string;
+  onOpenProfileSettings: () => void;
 }
 
 interface UserRoom {
@@ -21,7 +22,7 @@ interface UserRoom {
   is_active: boolean;
 }
 
-export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, currentUserId }: RoomSelectionPageProps) => {
+export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, currentUserId, onOpenProfileSettings }: RoomSelectionPageProps) => {
   const [roomName, setRoomName] = useState("");
   const [joinRoomId, setJoinRoomId] = useState("");
   const [userRooms, setUserRooms] = useState<UserRoom[]>([]);
@@ -184,6 +185,19 @@ export const RoomSelectionPage = ({ onCreateRoom, onJoinRoom, onSelectRoom, curr
     <div className="min-h-screen bg-background">
       <div className="max-w-md mx-auto px-4">
         <GameHeader title="Выбор комнаты" subtitle="Присоединитесь к игре или создайте новую комнату" />
+        
+        {/* Profile Settings Button */}
+        <div className="mb-6">
+          <Button 
+            onClick={onOpenProfileSettings}
+            variant="outline" 
+            size="sm"
+            className="w-full"
+          >
+            ⚙️ Настройки профиля
+          </Button>
+        </div>
+
         <div className="space-y-6">
           
           {/* User's rooms */}
