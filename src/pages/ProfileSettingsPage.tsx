@@ -109,6 +109,9 @@ export const ProfileSettingsPage = ({ onBack, currentUserId }: ProfileSettingsPa
         description: "Профиль обновлен"
       });
 
+      // Переходим на главную после сохранения
+      onBack();
+
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
@@ -144,7 +147,7 @@ export const ProfileSettingsPage = ({ onBack, currentUserId }: ProfileSettingsPa
         />
 
         <GameCard>
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div>
               <Label htmlFor="name" className="text-sm font-medium text-foreground">
                 Имя *
@@ -154,7 +157,7 @@ export const ProfileSettingsPage = ({ onBack, currentUserId }: ProfileSettingsPa
                 value={profile.name}
                 onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                 placeholder="Введите ваше имя"
-                className="mt-2 border-border/60 focus:border-primary/60 rounded-lg"
+                className="mt-1 border-border/60 focus:border-primary/60 rounded-lg"
               />
             </div>
 
@@ -167,7 +170,7 @@ export const ProfileSettingsPage = ({ onBack, currentUserId }: ProfileSettingsPa
                 value={profile.surname || ""}
                 onChange={(e) => setProfile({ ...profile, surname: e.target.value })}
                 placeholder="Введите вашу фамилию"
-                className="mt-2 border-border/60 focus:border-primary/60 rounded-lg"
+                className="mt-1 border-border/60 focus:border-primary/60 rounded-lg"
               />
             </div>
 
@@ -180,7 +183,7 @@ export const ProfileSettingsPage = ({ onBack, currentUserId }: ProfileSettingsPa
                 value={profile.position || ""}
                 onChange={(e) => setProfile({ ...profile, position: e.target.value })}
                 placeholder="Введите вашу должность"
-                className="mt-2 border-border/60 focus:border-primary/60 rounded-lg"
+                className="mt-1 border-border/60 focus:border-primary/60 rounded-lg"
               />
             </div>
 
