@@ -166,6 +166,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_user_registration: {
+        Args: { user_telegram_id: string }
+        Returns: boolean
+      }
+      get_user_profile: {
+        Args: { user_telegram_id: string }
+        Returns: {
+          id: string
+          name: string
+          surname: string
+          user_position: string
+          is_registered: boolean
+        }[]
+      }
       leave_room: {
         Args: { p_room_id: number; p_user_id: string }
         Returns: undefined

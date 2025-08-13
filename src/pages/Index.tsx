@@ -46,39 +46,34 @@ const Index = () => {
 
   const checkUserRegistration = async (telegramUser: any) => {
     try {
-      // Check if user profile exists and is registered
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', telegramUser.id)
-        .single();
+      // Check if user is registered using security definer function
+      const { data: isRegistered, error: checkError } = await supabase
+        .rpc('check_user_registration', { user_telegram_id: telegramUser.id });
 
-      if (profileError && profileError.code !== 'PGRST116') {
-        throw profileError;
+      if (checkError) {
+        throw checkError;
       }
 
-      if (profile && profile.is_registered) {
-        // User is registered, check for room memberships
-        setCurrentPlayer({
-          name: profile.name,
-          surname: profile.surname || undefined,
-          position: profile.position || undefined,
-        });
+      if (isRegistered) {
+        // User is registered, get their profile data
+        const { data: profileData, error: profileError } = await supabase
+          .rpc('get_user_profile', { user_telegram_id: telegramUser.id });
 
-        // Check if user has active room memberships
-        const { data: memberships, error: memberError } = await supabase
-          .from('room_members')
-          .select('room_id')
-          .eq('user_id', telegramUser.id)
-          .eq('is_active', true);
-
-        if (memberError) throw memberError;
-
-        if (memberships && memberships.length > 0) {
-          setGameState("roomSelection");
-        } else {
-          setGameState("roomSelection");
+        if (profileError) {
+          throw profileError;
         }
+
+        if (profileData && profileData.length > 0) {
+          const profile = profileData[0];
+          setCurrentPlayer({
+            name: profile.name,
+            surname: profile.surname || undefined,
+            position: profile.user_position || undefined,
+          });
+        }
+
+        // All registered users go to room selection
+        setGameState("roomSelection");
       } else {
         // User is not registered, stay on registration page
         setGameState("registration");
