@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { RegistrationPage } from "./RegistrationPage";
 import { RoomSelectionPage } from "./RoomSelectionPage";
@@ -33,6 +32,7 @@ const Index = () => {
   const [roomId, setRoomId] = useState<string>("");
   const [roomName, setRoomName] = useState<string>("");
   const [players, setPlayers] = useState<Player[]>([]);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const { user, isReady } = useTelegram();
   const { toast } = useToast();
 
@@ -46,22 +46,32 @@ const Index = () => {
 
   const checkUserRegistration = async (telegramUser: any) => {
     try {
+      setIsCheckingAuth(true);
+      console.log('Checking registration for user:', telegramUser.id);
+      
       // Check if user is registered using security definer function
       const { data: isRegistered, error: checkError } = await supabase
         .rpc('check_user_registration', { user_telegram_id: telegramUser.id });
 
+      console.log('Registration check result:', { isRegistered, checkError });
+
       if (checkError) {
+        console.error('Error checking registration:', checkError);
         throw checkError;
       }
 
       if (isRegistered) {
+        console.log('User is registered, getting profile data');
         // User is registered, get their profile data
         const { data: profileData, error: profileError } = await supabase
           .rpc('get_user_profile', { user_telegram_id: telegramUser.id });
 
         if (profileError) {
+          console.error('Error getting profile:', profileError);
           throw profileError;
         }
+
+        console.log('Profile data:', profileData);
 
         if (profileData && profileData.length > 0) {
           const profile = profileData[0];
@@ -72,15 +82,24 @@ const Index = () => {
           });
         }
 
-        // All registered users go to room selection
-        setGameState("roomSelection");
+        // Check for room ID in URL (invite link)
+        const urlParams = new URLSearchParams(window.location.search);
+        const inviteRoomId = urlParams.get('room');
+        if (inviteRoomId) {
+          await handleJoinRoom(inviteRoomId);
+        } else {
+          setGameState("roomSelection");
+        }
       } else {
+        console.log('User is not registered, showing registration page');
         // User is not registered, stay on registration page
         setGameState("registration");
       }
     } catch (error) {
       console.error('Error checking user registration:', error);
       setGameState("registration");
+    } finally {
+      setIsCheckingAuth(false);
     }
   };
 
@@ -141,6 +160,8 @@ const Index = () => {
     if (!user?.id) return;
     
     try {
+      console.log('Registering user:', user.id, playerData);
+      
       // Save/update user profile and mark as registered
       const { error: profileError } = await supabase
         .from('profiles')
@@ -152,8 +173,12 @@ const Index = () => {
           is_registered: true,
         }, { onConflict: 'id' });
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        throw profileError;
+      }
 
+      console.log('User registered successfully');
       setCurrentPlayer(playerData);
       
       // Check for room ID in URL (invite link)
@@ -431,6 +456,15 @@ const Index = () => {
   const handleShowResults = () => {
     setGameState("results");
   };
+
+  // Show loading while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-lg">Проверка авторизации...</div>
+      </div>
+    );
+  }
 
   if (gameState === "registration") {
     return (
